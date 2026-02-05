@@ -31,7 +31,7 @@ async function main() {
         // Network
         host: process.env.HOST ?? '0.0.0.0',
         port: Number(process.env.PORT ?? 3000),
-        publicUrl: process.env.PUBLIC_URL,
+        publicUrl: process.env.PUBLIC_URL ?? 'https://watchtopia-api.onrender.com',
 
         // Cache (memory for dev, Redis for prod)
         cache: {

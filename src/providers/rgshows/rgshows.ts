@@ -49,7 +49,7 @@ export class RgShowsProvider extends BaseProvider {
                 return this.emptyResult('Failed to fetch page', media);
             }
             const resp: RgShowsResponse = data as unknown as RgShowsResponse;
-            
+
             const result: ProviderResult = {
                 sources: [{
                     url: this.createProxyUrl(resp.stream.url, this.HEADERS),
@@ -64,8 +64,9 @@ export class RgShowsProvider extends BaseProvider {
                     provider: {
                         name: this.name,
                         id: this.id
-                    }
-                }],
+                    },
+                    castUrl: resp.stream.url
+                } as any],
                 subtitles: [],
                 diagnostics: []
             }
