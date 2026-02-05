@@ -15,10 +15,7 @@
         "resolveJsonModule": true,
         "declaration": true,
         "sourceMap": true,
-        "noEmit": false,
-        "types": [
-            "node"
-        ]
+        "noEmit": false
     },
     "ts-node": {
         "esm": true
