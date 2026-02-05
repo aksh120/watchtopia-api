@@ -29,7 +29,7 @@ async function main() {
         version: '1.0.0',
 
         // Network
-        host: process.env.HOST ?? 'localhost',
+        host: process.env.HOST ?? '0.0.0.0',
         port: Number(process.env.PORT ?? 3000),
         publicUrl: process.env.PUBLIC_URL,
 
@@ -66,6 +66,7 @@ async function main() {
     await server.start();
 }
 
-main().catch(() => {
+main().catch((err) => {
+    console.error('[Fatal] Server failed to start:', err);
     process.exit(1);
 });
