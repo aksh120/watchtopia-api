@@ -8,9 +8,5 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: HOST
-        value: 0.0.0.0
-      - key: PORT
-        value: 10000
       - key: CACHE_TYPE
         value: memory

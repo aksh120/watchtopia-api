@@ -24,13 +24,18 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 async function main() {
+    const host = process.env.HOST ?? '0.0.0.0';
+    const port = Number(process.env.PORT ?? 3000);
+
+    console.log(`[Server] Starting with HOST=${host}, PORT=${port}`);
+
     const server = new OMSSServer({
         name: 'CinePro',
         version: '1.0.0',
 
         // Network
-        host: process.env.HOST ?? '0.0.0.0',
-        port: Number(process.env.PORT ?? 3000),
+        host: host,
+        port: port,
         publicUrl: process.env.PUBLIC_URL,
 
         // Cache (memory for dev, Redis for prod)
@@ -66,6 +71,7 @@ async function main() {
     await server.start();
 }
 
-main().catch(() => {
+main().catch((err) => {
+    console.error('[Server] Fatal error during startup:', err);
     process.exit(1);
 });
