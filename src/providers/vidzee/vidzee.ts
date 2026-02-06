@@ -109,7 +109,8 @@ export class VidZeeProvider extends BaseProvider {
                 !link.includes('rrr.cloud31peak.site') &&
                 !link.includes('mia.1shows.app') &&
                 !link.includes('sau.stellarpathventures.shop') &&
-                !link.includes('storm.dl5cg77imb.workers.dev')
+                !link.includes('storm.dl5cg77imb.workers.dev') &&
+                !link.includes('rrr.core36link.site')
             );
 
             const sources: Source[] = uniqueLinks.map((link) => ({
