@@ -188,11 +188,11 @@ export class VixSrcProvider extends BaseProvider {
                     audioTracks.length > 0
                         ? audioTracks
                         : [
-                            {
-                                language: 'en',
-                                label: 'English',
-                            },
-                        ],
+                              {
+                                  language: 'en',
+                                  label: 'English',
+                              },
+                          ],
                 provider: {
                     id: this.id,
                     name: this.name,
@@ -206,13 +206,13 @@ export class VixSrcProvider extends BaseProvider {
             diagnostics:
                 sources.length === 0
                     ? [
-                        {
-                            code: 'PARTIAL_SCRAPE',
-                            message: 'No playable streams found',
-                            field: 'sources',
-                            severity: 'warning',
-                        },
-                    ]
+                          {
+                              code: 'PARTIAL_SCRAPE',
+                              message: 'No playable streams found',
+                              field: 'sources',
+                              severity: 'warning',
+                          },
+                      ]
                     : [],
         };
     }
@@ -254,16 +254,14 @@ export class VixSrcProvider extends BaseProvider {
 
             const language = line.match(/NAME="([^"]+)"/)?.[1] ?? 'unknown';
 
-            if (language.toLowerCase().includes('english')) {
-                subtitles.push({
-                    url: this.createProxyUrl(url, {
-                        ...this.HEADERS,
-                        Referer: pageUrl,
-                    }),
-                    label: language,
-                    format: 'vtt',
-                });
-            }
+            subtitles.push({
+                url: this.createProxyUrl(url, {
+                    ...this.HEADERS,
+                    Referer: pageUrl,
+                }),
+                label: language,
+                format: 'vtt',
+            });
         }
 
         return subtitles;
