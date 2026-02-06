@@ -109,18 +109,52 @@ export class VixSrcProvider extends BaseProvider {
                 validateStatus: (status) => status < 500, // Accept 4xx to log them
             });
 
-            if (response.status !== 200) {
-                this.console.warn(`VixSrc page fetch non-200: status=${response.status} url=${url}`);
-                return null;
+            // detailed error logging handled below
+            // If checking status here
+            if (response.status === 200) {
+                this.console.debug(`VixSrc page fetched successfully for ${media.tmdbId}`);
+                return response.data;
             }
-
-            this.console.debug(`VixSrc page fetched successfully for ${media.tmdbId}`);
-            return response.data;
         } catch (error: any) {
-            // Detailed error logging
-            this.console.error(`VixSrc fetch failed: ${error.message} code=${error.code} status=${error.response?.status}`, error, media);
-            return null;
+            // Log the first failure
+            this.console.warn(`VixSrc attempt 1 failed with browser UA: ${error.message} status=${error.response?.status}`);
         }
+
+        // Attempt 2: Googlebot
+        try {
+            this.console.debug('VixSrc retrying with Googlebot UA', { url });
+            const response = await axios.get(url, {
+                headers: {
+                    ...this.HEADERS,
+                    'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+                    'Referer': 'https://www.google.com/',
+                },
+                timeout: 20000,
+                validateStatus: (status) => status < 500,
+            });
+            if (response.status === 200) return response.data;
+            this.console.warn(`VixSrc attempt 2 failed with Googlebot UA status=${response.status}`);
+        } catch (e) { /* ignore */ }
+
+        // Attempt 3: Bingbot
+        try {
+            this.console.debug('VixSrc retrying with Bingbot UA', { url });
+            const response = await axios.get(url, {
+                headers: {
+                    ...this.HEADERS,
+                    'User-Agent': 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
+                    'Referer': 'https://www.bing.com/',
+                },
+                timeout: 20000,
+                validateStatus: (status) => status < 500,
+            });
+            if (response.status === 200) return response.data;
+            this.console.warn(`VixSrc attempt 3 failed with Bingbot UA status=${response.status}`);
+        } catch (e: any) {
+            this.console.error(`VixSrc all attempts failed. Last error: ${e.message}`, e, media);
+        }
+
+        return null;
     }
 
     /**
