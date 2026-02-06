@@ -86,10 +86,13 @@ export class VixSrcProvider extends BaseProvider {
      * Fetch page HTML with enhanced error handling
      */
     private async fetchPage(url: string, media: ProviderMediaObject): Promise<string | null> {
-        try {
-            this.console.debug('VixSrc fetching page', { url, tmdbId: media.tmdbId });
+        const proxyUrl = process.env.VIXSRC_PROXY;
+        const targetUrl = proxyUrl ? `${proxyUrl}?url=${encodeURIComponent(url)}` : url;
 
-            const response = await axios.get(url, {
+        try {
+            this.console.debug(`VixSrc fetching page (proxy=${!!proxyUrl})`, { url: targetUrl, tmdbId: media.tmdbId });
+
+            const response = await axios.get(targetUrl, {
                 headers: {
                     ...this.HEADERS,
                     // Add additional headers to look more like a browser
