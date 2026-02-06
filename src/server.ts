@@ -41,9 +41,9 @@ async function main() {
         version: '1.0.0',
 
         // Network
-        host: process.env.HOST ?? 'localhost',
+        host: process.env.HOST ?? '0.0.0.0', // Changed to 0.0.0.0 to match typical container/render needs too, though localhost is fine if behind proxy
         port: Number(process.env.PORT ?? 3000),
-        publicUrl: process.env.PUBLIC_URL,
+        publicUrl: process.env.PUBLIC_URL ?? 'https://watchtopia-api.onrender.com',
 
         // Cache (memory for dev, Redis for prod)
         cache: {
