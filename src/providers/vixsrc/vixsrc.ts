@@ -8,17 +8,11 @@ export class VixSrcProvider extends BaseProvider {
     readonly enabled = true;
     readonly BASE_URL = 'https://vixsrc.to';
     readonly HEADERS = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150 Safari/537.36',
         Accept: 'application/json, text/javascript, */*; q=0.01',
         'Accept-Language': 'en-US,en;q=0.9',
         Referer: this.BASE_URL,
         Origin: this.BASE_URL,
-        'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin',
     };
 
     readonly capabilities: ProviderCapabilities = {
@@ -90,77 +84,53 @@ export class VixSrcProvider extends BaseProvider {
 
     /**
      * Fetch page HTML with enhanced error handling
+     * Uses Cloudflare Worker proxy if VIXSRC_WORKER_URL is set (to bypass IP blocking on cloud hosts)
      */
     private async fetchPage(url: string, media: ProviderMediaObject): Promise<string | null> {
-        const proxyUrl = process.env.VIXSRC_PROXY;
-        const targetUrl = proxyUrl ? `${proxyUrl}?url=${encodeURIComponent(url)}` : url;
-
         try {
-            this.console.debug(`VixSrc fetching page (proxy=${!!proxyUrl})`, { url: targetUrl, tmdbId: media.tmdbId });
+            const workerUrl = process.env.VIXSRC_WORKER_URL;
+            let fetchUrl = url;
+            let headers: Record<string, string> = {
+                ...this.HEADERS,
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'sec-ch-ua': '"Chromium";v="150", "Google Chrome";v="150"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Sec-Fetch-User': '?1',
+                'Upgrade-Insecure-Requests': '1',
+            };
 
-            const response = await axios.get(targetUrl, {
-                headers: {
-                    ...this.HEADERS,
-                    // Add additional headers to look more like a browser loading a page
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache',
-                    'Sec-Fetch-Dest': 'document',
-                    'Sec-Fetch-Mode': 'navigate',
-                    'Sec-Fetch-Site': 'none',
-                    'Sec-Fetch-User': '?1',
-                    'Upgrade-Insecure-Requests': '1',
-                },
-                timeout: 20000, // Extended timeout for slow responses
-                maxRedirects: 5,
-                validateStatus: (status) => status < 500, // Accept 4xx to log them
-            });
-
-            // detailed error logging handled below
-            // If checking status here
-            if (response.status === 200) {
-                this.console.debug(`VixSrc page fetched successfully for ${media.tmdbId}`);
-                return response.data;
+            // Use Cloudflare Worker proxy if configured (bypasses IP blocking)
+            if (workerUrl) {
+                fetchUrl = `${workerUrl}?url=${encodeURIComponent(url)}`;
+                headers = { 'User-Agent': this.HEADERS['User-Agent'] }; // Worker handles other headers
+                this.console.debug(`VixSrc using Cloudflare Worker proxy`);
             }
+
+            this.console.debug(`VixSrc fetching page: ${url}`);
+
+            const response = await axios.get(fetchUrl, {
+                headers,
+                timeout: 25000, // Extended timeout for proxy
+                maxRedirects: 5,
+                validateStatus: (status) => status < 500,
+            });
+
+            if (response.status !== 200) {
+                this.console.warn(`VixSrc page fetch non-200: status=${response.status} url=${url}`);
+                return null;
+            }
+
+            this.console.debug(`VixSrc page fetched successfully for ${media.tmdbId}`);
+            return response.data;
         } catch (error: any) {
-            // Log the first failure
-            this.console.warn(`VixSrc attempt 1 failed with browser UA: ${error.message} status=${error.response?.status}`);
+            this.console.error(`VixSrc fetch failed: ${error.message} code=${error.code} status=${error.response?.status}`, error, media);
+            return null;
         }
-
-        // Attempt 2: Googlebot
-        try {
-            this.console.debug('VixSrc retrying with Googlebot UA', { url });
-            const response = await axios.get(url, {
-                headers: {
-                    ...this.HEADERS,
-                    'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-                    'Referer': 'https://www.google.com/',
-                },
-                timeout: 20000,
-                validateStatus: (status) => status < 500,
-            });
-            if (response.status === 200) return response.data;
-            this.console.warn(`VixSrc attempt 2 failed with Googlebot UA status=${response.status}`);
-        } catch (e) { /* ignore */ }
-
-        // Attempt 3: Bingbot
-        try {
-            this.console.debug('VixSrc retrying with Bingbot UA', { url });
-            const response = await axios.get(url, {
-                headers: {
-                    ...this.HEADERS,
-                    'User-Agent': 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
-                    'Referer': 'https://www.bing.com/',
-                },
-                timeout: 20000,
-                validateStatus: (status) => status < 500,
-            });
-            if (response.status === 200) return response.data;
-            this.console.warn(`VixSrc attempt 3 failed with Bingbot UA status=${response.status}`);
-        } catch (e: any) {
-            this.console.error(`VixSrc all attempts failed. Last error: ${e.message}`, e, media);
-        }
-
-        return null;
     }
 
     /**
