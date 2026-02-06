@@ -83,21 +83,42 @@ export class VixSrcProvider extends BaseProvider {
     }
 
     /**
-     * Fetch page HTML
+     * Fetch page HTML with enhanced error handling
      */
     private async fetchPage(url: string, media: ProviderMediaObject): Promise<string | null> {
         try {
+            this.console.debug('VixSrc fetching page', { url, tmdbId: media.tmdbId });
+
             const response = await axios.get(url, {
-                headers: this.HEADERS,
-                timeout: 10000,
+                headers: {
+                    ...this.HEADERS,
+                    // Add additional headers to look more like a browser
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                    'sec-ch-ua': '"Chromium";v="150", "Google Chrome";v="150"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"Windows"',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none',
+                    'Sec-Fetch-User': '?1',
+                    'Upgrade-Insecure-Requests': '1',
+                },
+                timeout: 20000, // Extended timeout for slow responses
+                maxRedirects: 5,
+                validateStatus: (status) => status < 500, // Accept 4xx to log them
             });
 
             if (response.status !== 200) {
+                this.console.warn(`VixSrc page fetch non-200: status=${response.status} url=${url}`);
                 return null;
             }
 
+            this.console.debug(`VixSrc page fetched successfully for ${media.tmdbId}`);
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
+            // Detailed error logging
+            this.console.error(`VixSrc fetch failed: ${error.message} code=${error.code} status=${error.response?.status}`, error, media);
             return null;
         }
     }
