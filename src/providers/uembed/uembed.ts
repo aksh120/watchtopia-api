@@ -22,6 +22,13 @@ export class UEmbedProvider extends BaseProvider {
     readonly id = 'uembed';
     readonly name = 'UEmbed';
     readonly enabled = true;
+    readonly BASE_URL = 'https://uembed.xyz';
+    readonly HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Origin': 'https://madplay.site',
+        'Referer': 'https://madplay.site/',
+    };
 
     // API endpoints
     private readonly UEMBED_API = 'https://uembed.xyz/api/video/tmdb';
@@ -29,12 +36,7 @@ export class UEmbedProvider extends BaseProvider {
     private readonly HOLLY_API = 'https://api.madplay.site/api/movies/holly';
     private readonly ROGFLIX_API = 'https://api.madplay.site/api/rogflix';
 
-    private readonly DEFAULT_HEADERS = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-        'Origin': 'https://madplay.site',
-        'Referer': 'https://madplay.site/',
-    };
+
 
     readonly capabilities: ProviderCapabilities = {
         supportedContentTypes: ['movies', 'tv'],
@@ -156,7 +158,7 @@ export class UEmbedProvider extends BaseProvider {
     private async fetchApi(url: string, name: string): Promise<StreamData[] | null> {
         try {
             const response = await axios.get(url, {
-                headers: this.DEFAULT_HEADERS,
+                headers: this.HEADERS,
                 timeout: 8000, // Fast timeout
             });
             return response.data;
@@ -189,7 +191,7 @@ export class UEmbedProvider extends BaseProvider {
                     headers: {
                         'Referer': urlOrigin + '/',
                         'Origin': urlOrigin,
-                        'User-Agent': this.DEFAULT_HEADERS['User-Agent'],
+                        'User-Agent': this.HEADERS['User-Agent'],
                     },
                     provider: apiName,
                 });
@@ -298,7 +300,7 @@ export class UEmbedProvider extends BaseProvider {
         try {
             const response = await axios.get(this.UEMBED_API + '?id=550', {
                 timeout: 5000,
-                headers: this.DEFAULT_HEADERS,
+                headers: this.HEADERS,
             });
             return response.status === 200;
         } catch {
