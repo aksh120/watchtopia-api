@@ -178,6 +178,9 @@ export class UEmbedProvider extends BaseProvider {
             const title = stream.title || stream.label || '';
             if (title.toLowerCase().includes('hindi')) continue;
 
+            // Skip GitHub raw content (as requested)
+            if (stream.file.includes('raw.githubusercontent.com')) continue;
+
             try {
                 const urlOrigin = new URL(stream.file).origin;
                 const quality = this.extractQuality(stream.file, stream.label);
