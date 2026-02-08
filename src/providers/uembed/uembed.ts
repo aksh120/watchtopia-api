@@ -191,7 +191,7 @@ export class UEmbedProvider extends BaseProvider {
 
             try {
                 const urlOrigin = new URL(stream.file).origin;
-                const quality = this.extractQuality(stream.file, stream.label);
+                const quality = apiName === 'vxr' ? '804p' : this.extractQuality(stream.file, stream.label);
                 const lang = this.getLanguageCode(title);
 
                 files.push({
@@ -269,7 +269,7 @@ export class UEmbedProvider extends BaseProvider {
     private deduplicateFiles(files: FileEntry[]): FileEntry[] {
         // Sort by quality (highest first)
         const qualityOrder: Record<string, number> = {
-            '4K': 8, '2160p': 8, '1440p': 7, '1080p': 6, '720p': 5,
+            '804p': 9, '4K': 8, '2160p': 8, '1440p': 7, '1080p': 6, '720p': 5,
             '480p': 4, '360p': 3, 'HD': 5, 'Auto': 4, 'Unknown': 1,
         };
 
