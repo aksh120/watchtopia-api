@@ -7,6 +7,7 @@ interface StreamData {
     file: string;
     label?: string;
     id?: string;
+    type?: string;
 }
 
 interface FileEntry {
@@ -181,6 +182,9 @@ export class UEmbedProvider extends BaseProvider {
             // Skip Hindi streams
             const title = stream.title || stream.label || '';
             if (title.toLowerCase().includes('hindi')) continue;
+
+            // Skip 'embed' type streams (as requested)
+            if (stream.type === 'embed') continue;
 
             // Skip GitHub raw content (as requested)
             if (stream.file.includes('raw.githubusercontent.com')) continue;
