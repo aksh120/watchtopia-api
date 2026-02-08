@@ -94,7 +94,7 @@ export class UEmbedProvider extends BaseProvider {
                 const isAsiaFlix = file.file.includes('asiaflix.net');
 
                 return {
-                    url: isAsiaFlix ? file.file : this.createProxyUrl(file.file, file.headers),
+                    url: isAsiaFlix ? `${file.file}&headers=%7B%7D` : this.createProxyUrl(file.file, file.headers),
                     rawUrl: file.file,
                     headers: file.headers,
                     type: 'hls' as SourceType,
