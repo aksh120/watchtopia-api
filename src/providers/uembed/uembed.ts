@@ -90,21 +90,25 @@ export class UEmbedProvider extends BaseProvider {
             // Limit to top 10 for performance
             const topFiles = uniqueFiles.slice(0, 10);
 
-            const sources: Source[] = topFiles.map(file => ({
-                url: this.createProxyUrl(file.file, file.headers),
-                rawUrl: file.file,
-                headers: file.headers,
-                type: 'hls' as SourceType,
-                quality: file.quality,
-                audioTracks: [{
-                    language: file.lang,
-                    label: this.getLanguageLabel(file.lang),
-                }],
-                provider: {
-                    id: this.id,
-                    name: `${this.name} (${file.provider})`,
-                },
-            } as any));
+            const sources: Source[] = topFiles.map(file => {
+                const isAsiaFlix = file.file.includes('asiaflix.net');
+
+                return {
+                    url: isAsiaFlix ? file.file : this.createProxyUrl(file.file, file.headers),
+                    rawUrl: file.file,
+                    headers: file.headers,
+                    type: 'hls' as SourceType,
+                    quality: file.quality,
+                    audioTracks: [{
+                        language: file.lang,
+                        label: this.getLanguageLabel(file.lang),
+                    }],
+                    provider: {
+                        id: this.id,
+                        name: `${this.name} (${file.provider})`,
+                    },
+                } as any;
+            });
 
             this.console.success(`${sources.length} sources from UEmbed`, media);
 
