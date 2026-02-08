@@ -267,6 +267,14 @@ export class UEmbedProvider extends BaseProvider {
     }
 
     private deduplicateFiles(files: FileEntry[]): FileEntry[] {
+        // Domain priority for sorting (higher = first)
+        const getDomainPriority = (url: string): number => {
+            if (url.includes('67streams.online')) return 100;
+            if (url.includes('kkphimplayer6.com')) return 90;
+            if (url.includes('asiaflix.net')) return 80;
+            return 0;
+        };
+
         // Sort by quality (highest first)
         const qualityOrder: Record<string, number> = {
             '804p': 9, '4K': 8, '2160p': 8, '1440p': 7, '1080p': 6, '720p': 5,
@@ -274,6 +282,11 @@ export class UEmbedProvider extends BaseProvider {
         };
 
         files.sort((a, b) => {
+            // First by domain priority
+            const domainPriorityA = getDomainPriority(a.file);
+            const domainPriorityB = getDomainPriority(b.file);
+            if (domainPriorityB !== domainPriorityA) return domainPriorityB - domainPriorityA;
+
             // Prefer English
             if (a.lang === 'en' && b.lang !== 'en') return -1;
             if (b.lang === 'en' && a.lang !== 'en') return 1;

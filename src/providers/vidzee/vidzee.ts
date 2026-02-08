@@ -113,47 +113,40 @@ export class VidZeeProvider extends BaseProvider {
                 !link.includes('streams.smashystream.top')
             );
 
-            // Sort: 67streams > s6.kkphimplayer6 > others
-            uniqueLinks.sort((a, b) => {
-                const getPriority = (url: string) => {
-                    if (url.includes('67streams.online')) return 2;
-                    if (url.includes('s6.kkphimplayer6.com')) return 1;
-                    return 0;
-                };
-                return getPriority(b) - getPriority(a);
-            });
+            // Domain priority for sorting (higher = first)
+            const getDomainPriority = (url: string): number => {
+                if (url.includes('67streams.online')) return 100;
+                if (url.includes('kkphimplayer6.com')) return 90;
+                if (url.includes('asiaflix.net')) return 80;
+                return 0;
+            };
 
             const sources: Source[] = uniqueLinks
                 .filter(link => this.inferType(link) !== 'embed')
-                .map((link) => {
-                    let quality = this.inferQuality(link);
-                    if (link.includes('67streams.online')) quality = '806p';
-                    else if (link.includes('s6.kkphimplayer6.com')) quality = '805p';
-
-                    return {
-                        url: this.createProxyUrl(link, {
-                            ...this.HEADERS,
-                            Referer: `${this.BASE_URL}/`,
-                        }),
-                        rawUrl: link,
-                        headers: {
-                            ...this.HEADERS,
-                            Referer: `${this.BASE_URL}/`,
+                .map((link) => ({
+                    url: this.createProxyUrl(link, {
+                        ...this.HEADERS,
+                        Referer: `${this.BASE_URL}/`,
+                    }),
+                    rawUrl: link,
+                    headers: {
+                        ...this.HEADERS,
+                        Referer: `${this.BASE_URL}/`,
+                    },
+                    type: this.inferType(link) as SourceType,
+                    quality: this.inferQuality(link),
+                    audioTracks: [
+                        {
+                            language: 'eng',
+                            label: 'English',
                         },
-                        type: this.inferType(link) as SourceType,
-                        quality,
-                        audioTracks: [
-                            {
-                                language: 'eng',
-                                label: 'English',
-                            },
-                        ],
-                        provider: {
-                            id: this.id,
-                            name: this.name,
-                        },
-                    } as any;
-                });
+                    ],
+                    provider: {
+                        id: this.id,
+                        name: this.name,
+                    },
+                } as any))
+                .sort((a, b) => getDomainPriority(b.rawUrl) - getDomainPriority(a.rawUrl));
 
             this.console.success(`${sources.length} unique decrypted sources, ${allSubtitles.size} subtitles`, media);
 
