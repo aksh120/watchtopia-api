@@ -113,29 +113,31 @@ export class VidZeeProvider extends BaseProvider {
                 !link.includes('streams.smashystream.top')
             );
 
-            const sources: Source[] = uniqueLinks.map((link) => ({
-                url: this.createProxyUrl(link, {
-                    ...this.HEADERS,
-                    Referer: `${this.BASE_URL}/`,
-                }),
-                rawUrl: link,
-                headers: {
-                    ...this.HEADERS,
-                    Referer: `${this.BASE_URL}/`,
-                },
-                type: this.inferType(link) as SourceType,
-                quality: this.inferQuality(link),
-                audioTracks: [
-                    {
-                        language: 'eng',
-                        label: 'English',
+            const sources: Source[] = uniqueLinks
+                .filter(link => this.inferType(link) !== 'embed')
+                .map((link) => ({
+                    url: this.createProxyUrl(link, {
+                        ...this.HEADERS,
+                        Referer: `${this.BASE_URL}/`,
+                    }),
+                    rawUrl: link,
+                    headers: {
+                        ...this.HEADERS,
+                        Referer: `${this.BASE_URL}/`,
                     },
-                ],
-                provider: {
-                    id: this.id,
-                    name: this.name,
-                },
-            } as any));
+                    type: this.inferType(link) as SourceType,
+                    quality: this.inferQuality(link),
+                    audioTracks: [
+                        {
+                            language: 'eng',
+                            label: 'English',
+                        },
+                    ],
+                    provider: {
+                        id: this.id,
+                        name: this.name,
+                    },
+                } as any));
 
             this.console.success(`${sources.length} unique decrypted sources, ${allSubtitles.size} subtitles`, media);
 
