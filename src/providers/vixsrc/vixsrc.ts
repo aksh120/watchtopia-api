@@ -216,10 +216,7 @@ export class VixSrcProvider extends BaseProvider {
                     try {
                         const absoluteUrl = new URL(url, masterUrl).toString();
                         subtitles.push({
-                            url: this.createProxyUrl(absoluteUrl, {
-                                ...this.HEADERS,
-                                Referer: pageUrl,
-                            }),
+                            url: absoluteUrl,
                             label,
                             format: 'vtt',
                         });
