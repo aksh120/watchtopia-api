@@ -1,8 +1,9 @@
 <div align="center">
 
-# CinePro Core 🎬
+# Watchtopia API 🎬
 
-**OMSS-compliant streaming backend powering the CinePro ecosystem.**</br> Built with [@omss/framework](https://www.npmjs.com/package/@omss/framework) for extensible, type-safe media scraping and streaming.
+**OMSS-compliant streaming backend powering the Watchtopia ecosystem.**<br/>
+Built with [@omss/framework](https://www.npmjs.com/package/@omss/framework) for extensible, type-safe media scraping and streaming.
 
 </div>
 
@@ -10,9 +11,9 @@
 
 ## Overview
 
-CinePro Core is the foundational backend service of CinePro that uses the Open Media Streaming Standard (OMSS) for movies and TV shows. This repository serves as the central scraping and streaming engine, designed to work seamlessly with the [CinePro ecosystem](https://github.com/orgs/cinepro-org/repositories?type=source).
+Watchtopia API is the foundational backend service for the Watchtopia App. It serves as a centralized scraping and streaming engine, designed to provide high-quality media sources efficiently.
 
-Built on the [OMSS template](https://github.com/omss-spec/template), this backend implements a modular provider system that enables easy integration of multiple streaming sources (that means providers) while maintaining type safety and production-ready standards.
+Built on the Open Media Streaming Standard (OMSS), this backend implements a modular provider system that enables easy integration of multiple streaming sources while maintaining type safety and production-ready standards.
 
 ---
 
@@ -21,10 +22,13 @@ Built on the [OMSS template](https://github.com/omss-spec/template), this backen
 - 🎯 **OMSS-Compliant** – Follows the Open Media Streaming Standard specification
 - 🔌 **Modular Providers** – Drop-in provider system with auto-discovery
 - 🛡️ **Type-Safe** – Full TypeScript implementation with strict types
-- ⚡ **Production-Ready** – Redis caching, Docker support, error handling
+- ⚡ **Production-Ready** – Redis caching, Docker support, robust error handling
 - 🎬 **Multi-Source** – Support for movies and TV shows from multiple providers
 - 🔄 **Hot Reload** – Development mode with automatic restarts
-- 📦 **CineHome Integration** – Compatible with CineHome download automation and any other CinePro ecosystem products
+
+### Supported Providers
+- **UEmbed**
+- **Vidzee**
 
 ---
 
@@ -38,10 +42,6 @@ Built on the [OMSS template](https://github.com/omss-spec/template), this backen
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/cinepro-org/core.git
-cd core
-
 # Install dependencies
 npm install
 
@@ -62,13 +62,10 @@ npm run dev
 ### Production
 
 > [!Caution]
-> **CinePro Core is designed for personal and home use only.**
-> </br> Users are responsible for ensuring compliance with applicable laws and terms of service for streaming sources.
+> **Watchtopia API is designed for personal and home use only.**
+> <br/> Users are responsible for ensuring compliance with applicable laws and terms of service for streaming sources.
 
 ```bash
-# Modify .env to match your environment (maybe redis)
-cp .env.example .env
-
 # Build and start
 npm run build
 npm start
@@ -79,49 +76,17 @@ npm start
 ## 📁 Project Structure
 
 ```
-core/
+watchtopia-api/
 ├── src/
 │   ├── server.ts           # Main server entrypoint
 │   ├── providers/          # Streaming source providers
-│   │   └── example.ts      # Reference implementation
+│   │   ├── uembed/         # UEmbed provider implementation
+│   │   └── vidzee/         # Vidzee provider implementation
+│   └── config.ts           # Shared configuration
 ├── .env.example            # Environment configuration template
 ├── package.json            # Dependencies and scripts
 └── tsconfig.json           # TypeScript configuration
 ```
-
----
-
-## 🔌 Adding Providers
-
-CinePro Core uses an extensible provider system. Each provider implements the `BaseProvider` interface to supply streaming sources.
-
-### Create a New Provider
-
-```typescript
-// src/providers/mysite.ts
-import { BaseProvider } from '@omss/framework';
-
-export class MySiteProvider extends BaseProvider {
-    readonly id = 'mysite';
-    readonly name = 'My Streaming Site';
-    readonly BASE_URL = 'https://mysite.com';
-    readonly capabilities = { 
-        supportedContentTypes: ['movies', 'tv'] 
-    };
-
-    async getMovieSources(tmdbId: string) {
-        // Implementation
-    }
-
-    async getTVSources(tmdbId: string, season: number, episode: number) {
-        // Implementation
-    }
-}
-```
-
-### Auto-Discovery
-
-Place your provider in `src/providers/` and restart the server. The framework automatically discovers and registers new providers.
 
 ---
 
@@ -137,7 +102,7 @@ TMDB_API_KEY=your_tmdb_api_key_here
 
 # Server Configuration
 PORT=3000
-HOST=localhost
+HOST=0.0.0.0
 NODE_ENV=development
 PUBLIC_URL=http://localhost:3000
 
@@ -149,7 +114,7 @@ REDIS_PASSWORD=
 
 ### TMDB API Key
 
-CinePro Core requires a TMDB API key for metadata enrichment:
+Watchtopia API requires a TMDB API key for metadata enrichment:
 
 1. Create a TMDB account at [themoviedb.org](https://www.themoviedb.org/)
 2. Navigate to Settings → API
@@ -169,53 +134,11 @@ npm start        # Start production server. Requires build first
 npm run format   # Format code with Prettier
 ```
 
-### Code Standards
-
-- TypeScript strict mode enabled
-- Prettier for code formatting
-- Comprehensive error handling
-- Provider interface compliance
-
----
-
-## 📚 Documentation
-
-- **OMSS Specification**: [github.com/omss-spec/omss-spec](https://github.com/omss-spec/omss-spec)
-- **Framework Docs**: [@omss/framework on npm](https://www.npmjs.com/package/@omss/framework)
-- **CinePro Docs**: [cinepro.mintlify.app](https://cinepro.mintlify.app)
-
----
-
-## 🤝 Contributing
-
-CinePro is actively maintained and open to contributors. We welcome: [github](https://github.com/cinepro-org)
-
-- New provider implementations
-- Bug fixes and improvements
-- Documentation enhancements
-- Performance optimizations
-
-### How to Contribute
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-provider`)
-3. Commit your changes (`git commit -m 'Add amazing provider'`)
-4. Push to the branch (`git push origin feature/amazing-provider`)
-5. Open a Pull Request
-
-See [CONTRIBUTING.md](https://github.com/omss-spec/omss-spec/blob/main/CONTRIBUTING.md) for detailed guidelines.
-
 ---
 
 ## 🔒 Legal Notice
 
-CinePro Core is designed for **personal and home use only**. Users are responsible for ensuring compliance with applicable laws and terms of service for streaming sources. This software does not host, store, or distribute any copyrighted content. [github](https://github.com/cinepro-org)
-
----
-
-## 📄 License
-
-MIT © CinePro Organization
+Watchtopia API is designed for **personal and home use only**. Users are responsible for ensuring compliance with applicable laws and terms of service for streaming sources. This software does not host, store, or distribute any copyrighted content.
 
 ---
 
@@ -223,14 +146,3 @@ MIT © CinePro Organization
 
 - Built with [OMSS Framework](https://github.com/omss-spec)
 - Metadata powered by [The Movie Database (TMDB)](https://www.themoviedb.org/)
-- Template from [omss-spec/template](https://github.com/omss-spec/template)
-
----
-
-<div align="center">
-
-**[Documentation](https://cinepro.mintlify.app)** -  **[Discussions](https://github.com/orgs/cinepro-org/discussions/)** -  **[Report Issue](https://github.com/cinepro-org/core/issues)**
-
-⭐ **Star this repo** if you find it useful!
-
-</div>

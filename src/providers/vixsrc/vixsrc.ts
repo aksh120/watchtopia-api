@@ -4,7 +4,7 @@ import axios from 'axios';
 
 export class VixSrcProvider extends BaseProvider {
     readonly id = 'vixsrc';
-    readonly name = 'VixSrc';
+    readonly name = 'WT API 3';
     readonly enabled = true;
     readonly BASE_URL = 'https://vixsrc.to';
     readonly HEADERS = {
@@ -216,10 +216,7 @@ export class VixSrcProvider extends BaseProvider {
                     try {
                         const absoluteUrl = new URL(url, masterUrl).toString();
                         subtitles.push({
-                            url: this.createProxyUrl(absoluteUrl, {
-                                ...this.HEADERS,
-                                Referer: pageUrl,
-                            }),
+                            url: absoluteUrl, // Direct URL without proxy
                             label,
                             format: 'vtt',
                         });
@@ -275,9 +272,6 @@ export class VixSrcProvider extends BaseProvider {
      * Health check
      */
     async healthCheck(): Promise<boolean> {
-        this.console.debug('VixSrc: Health check bypassed (returning true)');
-        return true;
-        /*
         try {
             const response = await axios.head(this.BASE_URL, {
                 timeout: 5000,
@@ -287,6 +281,7 @@ export class VixSrcProvider extends BaseProvider {
         } catch {
             return false;
         }
-        */
     }
 }
+
+export default VixSrcProvider;
