@@ -40,18 +40,22 @@ export class VixSrcProvider extends BaseProvider {
         try {
             // Build page URL
             const pageUrl = this.buildPageUrl(media);
+            this.console.debug(`VixSrc: Fetching page ${pageUrl}`);
 
             // Fetch page HTML
             const html = await this.fetchPage(pageUrl, media);
             if (!html) {
+                this.console.warn('VixSrc: Failed to fetch page');
                 return this.emptyResult('Failed to fetch page', media);
             }
 
             // Extract token and playlist info
             const tokenData = this.extractTokenData(html, media);
             if (!tokenData) {
+                this.console.warn('VixSrc: Failed to extract token data');
                 return this.emptyResult('Invalid or expired token', media);
             }
+            this.console.debug('VixSrc: Token extracted', tokenData);
 
             // Build master playlist URL
             const masterUrl = this.buildMasterUrl(tokenData);
@@ -59,14 +63,18 @@ export class VixSrcProvider extends BaseProvider {
             // Fetch master playlist
             const playlistContent = await this.fetchPlaylist(masterUrl, pageUrl, media);
             if (!playlistContent) {
+                this.console.warn('VixSrc: Failed to fetch playlist');
                 return this.emptyResult('Failed to fetch playlist', media);
             }
+
+            this.console.debug(`VixSrc: Playlist fetched (${playlistContent.length} bytes)`);
 
             // Parse playlist content
             const result = this.parsePlaylist(playlistContent, masterUrl, pageUrl, media);
 
             return result;
         } catch (error) {
+            this.console.error('VixSrc: Unknown error', error);
             return this.emptyResult(error instanceof Error ? error.message : 'Unknown provider error', media);
         }
     }
@@ -188,13 +196,22 @@ export class VixSrcProvider extends BaseProvider {
     private parseSubtitles(content: string, pageUrl: string, masterUrl: string): Subtitle[] {
         const subtitles: Subtitle[] = [];
         const lines = content.split('\n');
-        const regex = /#EXT-X-MEDIA:TYPE=SUBTITLES.*URI="([^"]+)".*NAME="([^"]+)"/;
+
+        this.console.debug(`VixSrc: Parsing subtitles from playlist (${lines.length} lines)`);
 
         for (const line of lines) {
-            const match = line.match(regex);
-            if (match) {
-                const url = match[1];
-                const label = match[2];
+            if (!line.startsWith('#EXT-X-MEDIA:TYPE=SUBTITLES')) continue;
+
+            // Use separate regex for flexibility
+            const urlMatch = line.match(/URI="([^"]+)"/);
+            const labelMatch = line.match(/NAME="([^"]+)"/);
+
+            // Also check for language code if needed, but LABEL is usually enough
+
+            if (urlMatch && labelMatch) {
+                const url = urlMatch[1];
+                const label = labelMatch[1];
+
                 if (url && label) {
                     try {
                         const absoluteUrl = new URL(url, masterUrl).toString();
@@ -206,12 +223,15 @@ export class VixSrcProvider extends BaseProvider {
                             label,
                             format: 'vtt',
                         });
+                        this.console.debug(`VixSrc: Found subtitle ${label}`);
                     } catch (e) {
-                        // Invalid URL
+                        this.console.warn(`VixSrc: Invalid subtitle URL: ${url}`);
                     }
                 }
             }
         }
+
+        this.console.success(`VixSrc: Extracted ${subtitles.length} subtitles`);
         return subtitles;
     }
 
