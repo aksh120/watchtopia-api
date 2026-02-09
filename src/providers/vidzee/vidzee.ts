@@ -6,7 +6,7 @@ import decrypt from './decrypt.js';
 
 export class VidZeeProvider extends BaseProvider {
     readonly id = 'vidzee';
-    readonly name = 'WT API 1';
+    readonly name = 'VidZee';
     readonly enabled = true;
     readonly BASE_URL = 'https://player.vidzee.wtf';
     readonly HEADERS = {

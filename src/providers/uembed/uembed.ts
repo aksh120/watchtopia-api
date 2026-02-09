@@ -21,7 +21,7 @@ interface FileEntry {
 
 export class UEmbedProvider extends BaseProvider {
     readonly id = 'uembed';
-    readonly name = 'WT API 2';
+    readonly name = 'UEmbed';
     readonly enabled = true;
     readonly BASE_URL = 'https://uembed.xyz';
     readonly HEADERS = {

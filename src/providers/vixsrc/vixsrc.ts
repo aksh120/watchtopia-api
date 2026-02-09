@@ -206,23 +206,31 @@ export class VixSrcProvider extends BaseProvider {
             const urlMatch = line.match(/URI="([^"]+)"/);
             const labelMatch = line.match(/NAME="([^"]+)"/);
 
-            // Also check for language code if needed, but LABEL is usually enough
-
             if (urlMatch && labelMatch) {
                 const url = urlMatch[1];
                 const label = labelMatch[1];
 
                 if (url && label) {
-                    try {
-                        const absoluteUrl = new URL(url, masterUrl).toString();
-                        subtitles.push({
-                            url: absoluteUrl, // Direct URL without proxy
-                            label,
-                            format: 'vtt',
-                        });
-                        this.console.debug(`VixSrc: Found subtitle ${label}`);
-                    } catch (e) {
-                        this.console.warn(`VixSrc: Invalid subtitle URL: ${url}`);
+                    // STRICT FILTER: Only English
+                    const isEnglish = label.toLowerCase().includes('english') ||
+                        label.toLowerCase() === 'en' ||
+                        label.toLowerCase() === 'eng';
+
+                    if (isEnglish) {
+                        try {
+                            const absoluteUrl = new URL(url, masterUrl).toString();
+                            subtitles.push({
+                                url: absoluteUrl, // Direct URL without proxy
+                                label: 'English', // Standardize label
+                                format: 'vtt',
+                            });
+                            this.console.debug(`VixSrc: Found English subtitle`);
+
+                            // User requested ONLY ONE English subtitle. Stop after finding the first one.
+                            break;
+                        } catch (e) {
+                            this.console.warn(`VixSrc: Invalid subtitle URL: ${url}`);
+                        }
                     }
                 }
             }
