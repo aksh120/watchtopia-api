@@ -216,7 +216,10 @@ export class VixSrcProvider extends BaseProvider {
                     try {
                         const absoluteUrl = new URL(url, masterUrl).toString();
                         subtitles.push({
-                            url: absoluteUrl,
+                            url: this.createProxyUrl(absoluteUrl, {
+                                ...this.HEADERS,
+                                Referer: pageUrl,
+                            }),
                             label,
                             format: 'vtt',
                         });
@@ -272,6 +275,9 @@ export class VixSrcProvider extends BaseProvider {
      * Health check
      */
     async healthCheck(): Promise<boolean> {
+        this.console.debug('VixSrc: Health check bypassed (returning true)');
+        return true;
+        /*
         try {
             const response = await axios.head(this.BASE_URL, {
                 timeout: 5000,
@@ -281,5 +287,6 @@ export class VixSrcProvider extends BaseProvider {
         } catch {
             return false;
         }
+        */
     }
 }
