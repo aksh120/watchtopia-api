@@ -6,7 +6,7 @@ import decrypt from './decrypt.js';
 
 export class VidZeeProvider extends BaseProvider {
     readonly id = 'vidzee';
-    readonly name = 'VidZee';
+    readonly name = 'WT (API 2)';
     readonly enabled = true;
     readonly BASE_URL = 'https://player.vidzee.wtf';
     readonly HEADERS = {
@@ -25,7 +25,12 @@ export class VidZeeProvider extends BaseProvider {
      * Fetch movie sources
      */
     async getMovieSources(media: ProviderMediaObject): Promise<ProviderResult> {
-        return this.getSources(media, { type: 'movie' });
+        // User requested ONLY uembed for movies
+        return {
+            sources: [],
+            subtitles: [],
+            diagnostics: []
+        };
     }
 
     /**

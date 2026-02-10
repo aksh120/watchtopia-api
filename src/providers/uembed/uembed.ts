@@ -21,7 +21,7 @@ interface FileEntry {
 
 export class UEmbedProvider extends BaseProvider {
     readonly id = 'uembed';
-    readonly name = 'UEmbed';
+    readonly name = 'WT';
     readonly enabled = true;
     readonly BASE_URL = 'https://uembed.xyz';
     readonly HEADERS = {
@@ -137,7 +137,7 @@ export class UEmbedProvider extends BaseProvider {
         if (type === 'movie') {
             apis.push({
                 url: `${this.VXR_API}?id=${tmdbId}&type=movie`,
-                name: 'vxr'
+                name: 'API 1'
             });
         }
 
