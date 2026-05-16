@@ -1,4 +1,4 @@
-import { bootstrap } from '../src/server.js';
+import bootstrap from '../src/app.js';
 
 let server: any;
 
