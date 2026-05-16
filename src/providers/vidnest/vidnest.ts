@@ -465,7 +465,7 @@ export class VidNestProvider extends BaseProvider {
         try {
             const res = await fetch(url, {
                 headers: this.HEADERS,
-                signal: AbortSignal.timeout(10000)
+                signal: AbortSignal.timeout(6000)
             });
             const content = await res.text();
             const variants = this.parseVariants(content, url);
@@ -566,7 +566,7 @@ export class VidNestProvider extends BaseProvider {
     private async fetchVidnest(url: string) {
         const res = await fetch(url, {
             headers: this.HEADERS,
-            signal: AbortSignal.timeout(10000)
+            signal: AbortSignal.timeout(6000)
         });
 
         if (!res.ok) {

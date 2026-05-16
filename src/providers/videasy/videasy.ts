@@ -69,14 +69,10 @@ export class VideasyProvider extends BaseProvider {
     readonly BASE_URL = 'https://api.videasy.net';
     readonly HEADERS = {
         'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
-        Accept: 'application/json, text/javascript, */*; q=0.01',
-        'Accept-Language': 'en-US,en;q=0.9',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        Accept: 'application/json, */*; q=0.01',
         Referer: 'https://player.videasy.net/',
-        Origin: 'https://player.videasy.net',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-site'
+        Origin: 'https://player.videasy.net'
     };
 
     readonly capabilities: ProviderCapabilities = {
@@ -194,12 +190,11 @@ export class VideasyProvider extends BaseProvider {
         const url = `${server.url}?${new URLSearchParams(params as Record<string, string>)}`;
         const response = await fetch(url, {
             headers: this.HEADERS,
-            signal: AbortSignal.timeout(10000)
+            signal: AbortSignal.timeout(6000)
         });
 
         if (!response.ok) {
-            console.error(`Videasy: ${server.name} fetch failed with status ${response.status}`);
-            return this.emptyResult(`invalid response: ${response.status}`, media);
+            return this.emptyResult('invalid response', media);
         }
 
         // api returns plain text hex blob, not json
@@ -265,7 +260,7 @@ export class VideasyProvider extends BaseProvider {
 
         return {
             sources: sources.filter((s) =>
-                s.audioTracks.every(
+                s.audioTracks.some(
                     (t: AudioTrack) =>
                         this.isAllowedLanguage(t.language) ||
                         this.isAllowedLanguage(t.label)
@@ -401,7 +396,7 @@ export class VideasyProvider extends BaseProvider {
         try {
             const res = await fetch(url, {
                 headers: this.HEADERS,
-                signal: AbortSignal.timeout(10000)
+                signal: AbortSignal.timeout(6000)
             });
             const content = await res.text();
             const variants = this.parseVariants(content, url);

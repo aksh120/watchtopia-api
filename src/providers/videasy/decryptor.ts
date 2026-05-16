@@ -41,8 +41,7 @@ export async function decryptResponse(
         const res = await fetch(DEC_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: blob, id: tmdbId }),
-            signal: AbortSignal.timeout(10000)
+            body: JSON.stringify({ text: blob, id: tmdbId })
         });
 
         if (!res.ok) return null;
@@ -58,8 +57,7 @@ export async function decryptResponse(
 
         cache.set(key, payload);
         return payload;
-    } catch (err) {
-        console.error('Videasy Decryption Failed:', err);
+    } catch {
         return null;
     }
 }
