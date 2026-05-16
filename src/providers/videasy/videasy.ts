@@ -69,10 +69,14 @@ export class VideasyProvider extends BaseProvider {
     readonly BASE_URL = 'https://api.videasy.net';
     readonly HEADERS = {
         'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
-        Accept: 'application/json, */*; q=0.01',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+        Accept: 'application/json, text/javascript, */*; q=0.01',
+        'Accept-Language': 'en-US,en;q=0.9',
         Referer: 'https://player.videasy.net/',
-        Origin: 'https://player.videasy.net'
+        Origin: 'https://player.videasy.net',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site'
     };
 
     readonly capabilities: ProviderCapabilities = {
