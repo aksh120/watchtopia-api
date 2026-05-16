@@ -1,236 +1,121 @@
+<a id="readme-top"></a>
+
 <div align="center">
+
+[![Contributors](https://img.shields.io/github/contributors/cinepro-org/core?style=for-the-badge&color=green)](#top-contributors)
+[![Forks](https://img.shields.io/github/forks/cinepro-org/core?style=for-the-badge&color=blue)](https://github.com/cinepro-org/core/forks)
+[![Stars](https://img.shields.io/github/stars/cinepro-org/core?style=for-the-badge&color=gold)](https://github.com/cinepro-org/core/stargazers)
+[![GitHub License](https://img.shields.io/badge/license-PolyForm-orange?style=for-the-badge)
+](LICENSE)
 
 # CinePro Core 🎬
 
-**OMSS-compliant streaming backend powering the CinePro ecosystem.**</br> Built with [@omss/framework](https://www.npmjs.com/package/@omss/framework) for extensible, type-safe media scraping and streaming.
+### _Support CinePro’s development by starring this repository!_ ⭐
+
+<img src="https://repository-images.githubusercontent.com/1138947882/af901757-a06b-442d-8976-c485fcafc230"></img>
+
+#### OMSS-compliant streaming backend powering the CinePro ecosystem.
+Built with [@omss/framework](https://www.npmjs.com/package/@omss/framework) for extensible, type-safe media scraping.
+
+**[📖 Documentation](https://docs.cinepro.cc)** · **[💬 Discussions](https://github.com/orgs/cinepro-org/discussions)** · **[🐛 Issues](https://github.com/cinepro-org/core/issues)**
 
 </div>
 
 ---
 
-## Overview
+CinePro Core is the central scraping and streaming engine of the CinePro ecosystem. It exposes an [OMSS-compliant](https://github.com/omss-spec/omss-spec) HTTP API for resolving movie and TV show stream sources from multiple providers, with Redis caching and full Docker support.
 
-CinePro Core is the foundational backend service of CinePro that uses the Open Media Streaming Standard (OMSS) for movies and TV shows. This repository serves as the central scraping and streaming engine, designed to work seamlessly with the [CinePro ecosystem](https://github.com/orgs/cinepro-org/repositories?type=source).
+It now also includes MCP support for AI agents — making it the first streaming server worldwide to offer this feature.
 
-Built on the [OMSS template](https://github.com/omss-spec/template), this backend implements a modular provider system that enables easy integration of multiple streaming sources (that means providers) while maintaining type safety and production-ready standards.
+**Get access to 50+ unique sources for a single movie or TV show!**
 
----
+> [!CAUTION]
+> CinePro Core is designed for **personal and home use only.**  
+> While we do not prevent public hosting, it is insecure by default.*
+>
+> Users are responsible for ensuring compliance with applicable laws and the terms of service of streaming providers.
 
-## ✨ Features
+<details><summary>*:</summary>
 
-- 🎯 **OMSS-Compliant** – Follows the Open Media Streaming Standard specification
-- 🔌 **Modular Providers** – Drop-in provider system with auto-discovery
-- 🛡️ **Type-Safe** – Full TypeScript implementation with strict types
-- ⚡ **Production-Ready** – Redis caching, Docker support, error handling
-- 🎬 **Multi-Source** – Support for movies and TV shows from multiple providers
-- 🔄 **Hot Reload** – Development mode with automatic restarts
-- 📦 **CineHome Integration** – Compatible with CineHome download automation and any other CinePro ecosystem products
+CinePro Core is a scraper. This means it automatically navigates through third-party streaming websites to retrieve direct streaming links while bypassing ads and scam redirects.
 
----
+Because this process consumes computing resources, publicly exposed instances may be vulnerable to abuse or (D)DOS attacks, which can significantly increase hosting costs.
 
-## 🚀 Quick Start
+We strongly recommend running CinePro Core locally. More end-user documentation and setup guides will be released soon.
 
-### Prerequisites
+</details>
 
-- Node.js 20+
-- TMDB API Key ([get one here](https://www.themoviedb.org/settings/api))
+## Quick Start
 
-### Installation
+**Prerequisites:** Node.js 20+ and a [TMDB API key](https://www.themoviedb.org/settings/api)
 
 ```bash
-# Clone the repository
-git clone https://github.com/cinepro-org/core.git
-cd core
-
-# Install dependencies
+git clone https://github.com/cinepro-org/core.git && cd core
 npm install
+cp .env.example .env   # add your TMDB_API_KEY and configure additional options if needed
+npm run dev            # http://localhost:3000
+````
 
-# Configure environment
-cp .env.example .env
-# Edit .env and add your TMDB_API_KEY
-```
+For Docker, production deployment, and advanced configuration options → **[Quickstart](https://docs.cinepro.cc/quickstart)**
 
-### Development
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```bash
-# Start dev server with hot reload
-npm run dev
+## Features
 
-# Server runs at http://localhost:3000
-```
+* 🎯 **OMSS-Compliant** – follows the Open Media Streaming Standard
+* 🔌 **Modular Providers** – drop-in provider system with auto-discovery
+* 🛡️ **Type-Safe** – built with strict TypeScript
+* ⚡ **Production-Ready** – Redis caching, Docker support, and robust error handling
+* 🎬 **Multi-Source Streaming** – resolves movies and TV shows from multiple providers
+* 📺 **Stremio Compatibility** – enable a Stremio addon using the `STREMIO_ADDON` environment variable at `/stremio/manifest.json`
+* 📦 **CineHome Integration** *(planned for late 2026)* – compatible with CineHome download automation
 
-### Production
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-> [!Caution]
-> **CinePro Core is designed for personal and home use only.**
-> </br> Users are responsible for ensuring compliance with applicable laws and terms of service for streaming sources.
+## Documentation
 
-```bash
-# Modify .env to match your environment (maybe redis)
-cp .env.example .env
+Full documentation, API references, configuration guides, and provider development resources are available at **[CinePro Docs](https://docs.cinepro.cc)**.
 
-# Build and start
-npm run build
-npm start
-```
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
----
+## Contributing
 
-## 📁 Project Structure
+Pull requests are welcome — especially for new providers, bug fixes, and documentation improvements.
 
-```
-core/
-├── src/
-│   ├── server.ts           # Main server entrypoint
-│   ├── providers/          # Streaming source providers
-│   │   └── example.ts      # Reference implementation
-├── .env.example            # Environment configuration template
-├── package.json            # Dependencies and scripts
-└── tsconfig.json           # TypeScript configuration
-```
+See the [Documentation](https://docs.cinepro.cc/core/general-information/development) and the [Contributing Guidelines](https://github.com/cinepro-org/core?tab=contributing-ov-file#contributing-to-cinepro-core) for more information.
 
----
+### Top Contributors
 
-## 🔌 Adding Providers
+<a href="https://github.com/cinepro-org/core/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=cinepro-org/core" alt="contrib.rocks image" />
+</a>
 
-CinePro Core uses an extensible provider system. Each provider implements the `BaseProvider` interface to supply streaming sources.
+*Join the project by contributing!*
 
-### Create a New Provider
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```typescript
-// src/providers/mysite.ts
-import { BaseProvider } from '@omss/framework';
+## Graphs
 
-export class MySiteProvider extends BaseProvider {
-    readonly id = 'mysite';
-    readonly name = 'My Streaming Site';
-    readonly BASE_URL = 'https://mysite.com';
-    readonly capabilities = { 
-        supportedContentTypes: ['movies', 'tv'] 
-    };
+![Repobeats analytics image](https://repobeats.axiom.co/api/embed/94fe2818e3f3254c91180779917073d3dbb1ace1.svg "Repobeats analytics image")
 
-    async getMovieSources(tmdbId: string) {
-        // Implementation
-    }
+<a href="https://www.star-history.com/#cinepro-org/core&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=cinepro-org/core&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=cinepro-org/core&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=cinepro-org/core&type=date&legend=top-left" />
+ </picture>
+</a>
 
-    async getTVSources(tmdbId: string, season: number, episode: number) {
-        // Implementation
-    }
-}
-```
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### Auto-Discovery
+## License
 
-Place your provider in `src/providers/` and restart the server. The framework automatically discovers and registers new providers.
+PolyForm Noncommercial License 1.0.0 © CinePro Organization — see [LICENSE](LICENSE) for details.
 
----
+This software does not host, store, or distribute copyrighted content.
 
-## ⚙️ Configuration
+Any DMCA complaints should be directed to the hosting provider, not to us.
 
-### Environment Variables
+[Read more here](https://docs.cinepro.cc/core/general-information/license)
 
-Create a `.env` file based on `.env.example`:
-
-```env
-# Required
-TMDB_API_KEY=your_tmdb_api_key_here
-
-# Server Configuration
-PORT=3000
-HOST=localhost
-NODE_ENV=development
-PUBLIC_URL=http://localhost:3000
-
-# Redis (Production)
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-```
-
-### TMDB API Key
-
-CinePro Core requires a TMDB API key for metadata enrichment:
-
-1. Create a TMDB account at [themoviedb.org](https://www.themoviedb.org/)
-2. Navigate to Settings → API
-3. Request an API key (choose "Developer" option)
-4. Add the key to your `.env` file
-
----
-
-## 🛠️ Development
-
-### Scripts
-
-```bash
-npm run dev      # Development server with hot reload
-npm run build    # Build for production
-npm start        # Start production server. Requires build first
-npm run format   # Format code with Prettier
-```
-
-### Code Standards
-
-- TypeScript strict mode enabled
-- Prettier for code formatting
-- Comprehensive error handling
-- Provider interface compliance
-
----
-
-## 📚 Documentation
-
-- **OMSS Specification**: [github.com/omss-spec/omss-spec](https://github.com/omss-spec/omss-spec)
-- **Framework Docs**: [@omss/framework on npm](https://www.npmjs.com/package/@omss/framework)
-- **CinePro Docs**: [cinepro.mintlify.app](https://cinepro.mintlify.app)
-
----
-
-## 🤝 Contributing
-
-CinePro is actively maintained and open to contributors. We welcome: [github](https://github.com/cinepro-org)
-
-- New provider implementations
-- Bug fixes and improvements
-- Documentation enhancements
-- Performance optimizations
-
-### How to Contribute
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-provider`)
-3. Commit your changes (`git commit -m 'Add amazing provider'`)
-4. Push to the branch (`git push origin feature/amazing-provider`)
-5. Open a Pull Request
-
-See [CONTRIBUTING.md](https://github.com/omss-spec/omss-spec/blob/main/CONTRIBUTING.md) for detailed guidelines.
-
----
-
-## 🔒 Legal Notice
-
-CinePro Core is designed for **personal and home use only**. Users are responsible for ensuring compliance with applicable laws and terms of service for streaming sources. This software does not host, store, or distribute any copyrighted content. [github](https://github.com/cinepro-org)
-
----
-
-## 📄 License
-
-MIT © CinePro Organization
-
----
-
-## 🌟 Acknowledgments
-
-- Built with [OMSS Framework](https://github.com/omss-spec)
-- Metadata powered by [The Movie Database (TMDB)](https://www.themoviedb.org/)
-- Template from [omss-spec/template](https://github.com/omss-spec/template)
-
----
-
-<div align="center">
-
-**[Documentation](https://cinepro.mintlify.app)** -  **[Discussions](https://github.com/orgs/cinepro-org/discussions/)** -  **[Report Issue](https://github.com/cinepro-org/core/issues)**
-
-⭐ **Star this repo** if you find it useful!
-
-</div>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>

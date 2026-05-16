@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: cinepro-core
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 3000
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=450
+      - key: CACHE_TYPE
+        value: memory
+      - key: TMDB_API_KEY
+        sync: false # User should set this in Render UI
+      - key: STREMIO_ADDON
+        value: "false"
+      - key: MCP_ENABLED
+        value: "false"

@@ -1,0 +1,447 @@
+import type {
+    ProviderCapabilities,
+    ProviderMediaObject,
+    ProviderResult,
+    Subtitle,
+    AudioTrack,
+    Diagnostic,
+    Source,
+    SourceType
+} from '@omss/framework';
+import { BaseProvider } from '@omss/framework';
+import { ApiResponse, EncryptedPayload, Switch } from './streammafia.types.js';
+import { decryptStreamMafia } from './decrypt.js';
+import { generateRandomUserAgent } from '../../utils/ua.js';
+
+export class StreamMafiaProvider extends BaseProvider {
+    readonly id = 'streammafia';
+    readonly name = 'MafiaEmbed';
+    readonly enabled = true;
+    readonly BASE_URL = 'https://sf.streammafia.to';
+    readonly HEADERS = {
+        'User-Agent': '',
+        Accept: 'application/json, text/javascript, */*; q=0.01',
+        'Accept-Language': 'en-US,en;q=0.9',
+        Referer: this.BASE_URL + '/',
+        Origin: this.BASE_URL,
+        Cookie: '',
+        'x-api-token': '',
+        'x-content-id': ''
+    };
+
+    readonly capabilities: ProviderCapabilities = {
+        supportedContentTypes: ['movies', 'tv']
+    };
+
+    async getMovieSources(media: ProviderMediaObject): Promise<ProviderResult> {
+        return this.getSources(media);
+    }
+
+    async getTVSources(media: ProviderMediaObject): Promise<ProviderResult> {
+        return this.getSources(media);
+    }
+
+    async healthCheck(): Promise<boolean> {
+        try {
+            const res = await fetch(this.BASE_URL, {
+                method: 'HEAD',
+                headers: this.HEADERS
+            });
+            return res.status === 200;
+        } catch {
+            return false;
+        }
+    }
+
+    private async getSources(
+        media: ProviderMediaObject
+    ): Promise<ProviderResult> {
+        try {
+            this.HEADERS['User-Agent'] = generateRandomUserAgent();
+            this.HEADERS['x-content-id'] = media.tmdbId.toString();
+
+            const cookie: string = await this.getSessionCookie();
+            if (!cookie) {
+                return this.emptyResult('Failed to retrieve session cookie');
+            }
+
+            this.HEADERS.Cookie =
+                cookie.split(';')[0] ||
+                'vid_session=' +
+                    Buffer.from(
+                        JSON.stringify({
+                            id: media.tmdbId,
+                            iat: Math.floor(Date.now() / 1000)
+                        })
+                    ).toString('base64');
+
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            const token: string = await this.getToken();
+            if (!token) {
+                return this.emptyResult('Failed to retrieve access token');
+            }
+
+            this.HEADERS['x-api-token'] = token;
+
+            const url = this.buildPageUrl(media);
+            const encrypted = await this.fetchPage(url);
+
+            if (!encrypted) {
+                return this.emptyResult('Invalid API response');
+            }
+
+            const api = decryptStreamMafia(encrypted);
+            return await this.mapApiResponse(api);
+        } catch (err) {
+            return this.emptyResult(
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+        }
+    }
+
+    private async getToken(): Promise<string> {
+        try {
+            const res = await fetch(`${this.BASE_URL}/api/token`, {
+                headers: { ...this.HEADERS },
+                referrer: this.BASE_URL + '/'
+            });
+            if (res.status !== 200) return '';
+            const data = (await res.json()) as { token?: string };
+            return data.token || '';
+        } catch {
+            return '';
+        }
+    }
+
+    private async getSessionCookie(): Promise<string> {
+        try {
+            const res = await fetch(this.BASE_URL + '/api/session', {
+                method: 'POST',
+                headers: this.HEADERS,
+                body: null
+            });
+            return res.headers.get('Set-Cookie') || '';
+        } catch {
+            return '';
+        }
+    }
+
+    private buildPageUrl(media: ProviderMediaObject): string {
+        if (media.type === 'movie') {
+            return `${this.BASE_URL}/api/movie/?id=${media.tmdbId}`;
+        }
+
+        return `${this.BASE_URL}/api/?tv=${media.tmdbId}&season=${media.s}&episode=${media.e}`;
+    }
+
+    private async fetchPage(url: string): Promise<EncryptedPayload | null> {
+        try {
+            const res = await fetch(url, {
+                headers: this.HEADERS,
+                signal: AbortSignal.timeout(6000)
+            });
+            if (res.status !== 200) return null;
+            return (await res.json()) as EncryptedPayload;
+        } catch {
+            return null;
+        }
+    }
+
+    private async mapApiResponse(api: ApiResponse): Promise<ProviderResult> {
+        const sources: Source[] = [];
+        const subtitles: Subtitle[] = [];
+        const diagnostics: Diagnostic[] = [];
+
+        const fallbackAudio = this.extractAudioTrack(api.selected);
+
+        // main stream
+        const mainSources = await this.extractSourcesFromApi(
+            api,
+            fallbackAudio
+        );
+        sources.push(...mainSources);
+
+        // switches in parallel
+        if ((api.switches?.length ?? 0) > 0) {
+            const switchResults = await Promise.all(
+                api.switches.map((sw) => this.resolveSwitch(sw))
+            );
+
+            for (const result of switchResults) {
+                sources.push(...result);
+            }
+        }
+
+        if (sources.length === 0) {
+            diagnostics.push({
+                code: 'PROVIDER_ERROR',
+                message: `${this.name}: No playable sources found`,
+                field: '',
+                severity: 'error'
+            });
+        }
+
+        // dedupe and filter by language
+        const seen = new Set<string>();
+        const deduped: Source[] = [];
+
+        for (const s of sources) {
+            if (seen.has(s.url)) continue;
+
+            const isAllowed =
+                s.audioTracks.length === 0 ||
+                s.audioTracks.some(
+                    (t: AudioTrack) =>
+                        this.isAllowedLanguage(t.language) ||
+                        this.isAllowedLanguage(t.label)
+                );
+
+            if (!isAllowed) continue;
+
+            seen.add(s.url);
+            deduped.push(s);
+        }
+
+        return { sources: deduped, subtitles, diagnostics };
+    }
+
+    private isAllowedLanguage(lang?: string): boolean {
+        if (!lang) return true; // Allow unknown as it's often English
+        const l = lang.toLowerCase();
+        const allowed = ['en', 'eng', 'english', 'hi', 'hin', 'hindi'];
+        return allowed.includes(l);
+    }
+
+    private async resolveSwitch(sw: Switch): Promise<Source[]> {
+        try {
+            const headers = { ...this.HEADERS };
+
+            const url = `${this.BASE_URL}/api/source/${sw.file_code}`;
+            const encrypted = await this.fetchPage(url);
+
+            if (!encrypted) return [];
+
+            const api = decryptStreamMafia(encrypted);
+
+            const fallbackAudio: AudioTrack = {
+                language: sw.lang_code?.toLowerCase() || 'unknown',
+                label: sw.lang || sw.lang_code || 'Unknown'
+            };
+
+            return await this.extractSourcesFromApi(api, fallbackAudio);
+        } catch {
+            return [];
+        }
+    }
+
+    private async extractSourcesFromApi(
+        api: ApiResponse,
+        fallbackAudio: AudioTrack
+    ): Promise<Source[]> {
+        const sources: Source[] = [];
+
+        if (api.stream?.hls_streaming) {
+            const hlsSources = await this.resolveHLS(
+                this.createProxyUrl(api.stream.hls_streaming, {
+                    ...this.HEADERS,
+                    Referer: this.BASE_URL + '/',
+                    Origin: this.BASE_URL
+                }),
+                fallbackAudio,
+                'auto'
+            );
+            const filteredHls = hlsSources.filter((s) =>
+                s.audioTracks.every(
+                    (t) =>
+                        this.isAllowedLanguage(t.language) ||
+                        this.isAllowedLanguage(t.label)
+                )
+            );
+            sources.push(...filteredHls);
+        }
+
+        for (const download of api.stream?.download ?? []) {
+            sources.push({
+                url: this.createProxyUrl(download.url, {
+                    ...this.HEADERS,
+                    Referer: this.BASE_URL + '/',
+                    Origin: this.BASE_URL
+                }),
+                type: this.inferSourceType(download.url),
+                quality: this.normalizeQuality(download.quality),
+                audioTracks: [fallbackAudio],
+                provider: {
+                    id: this.id,
+                    name: this.name
+                }
+            });
+        }
+
+        const allowedQualities = ['360p', '480p', '720p', '1080p', '4k'];
+        return sources.filter(
+            (s) =>
+                allowedQualities.includes(s.quality) &&
+                s.audioTracks.length <= 1
+        );
+    }
+
+    private extractAudioTrack(selected: ApiResponse['selected']): AudioTrack {
+        const language =
+            selected?.lang_code?.trim().toLowerCase() ||
+            selected?.lang?.trim().toLowerCase() ||
+            'unknown';
+
+        const label =
+            selected?.lang?.trim() ||
+            selected?.lang_code?.toUpperCase() ||
+            'Unknown';
+
+        return { language, label };
+    }
+
+    private async resolveHLS(
+        url: string,
+        fallbackAudio: AudioTrack,
+        originalQuality: string
+    ): Promise<Source[]> {
+        try {
+            const res = await fetch(url, {
+                headers: {
+                    ...this.HEADERS,
+                    Referer: this.BASE_URL + '/'
+                },
+                signal: AbortSignal.timeout(6000)
+            });
+
+            const content: string = await res.text();
+            const variants = this.parseVariants(content, url);
+            const audioTracks = this.parseAudioTracks(content);
+            const tracks =
+                audioTracks.length > 0 ? audioTracks : [fallbackAudio];
+
+            if (variants.length === 0) {
+                return [
+                    {
+                        url,
+                        type: 'hls',
+                        quality: 'auto',
+                        audioTracks: tracks,
+                        provider: { id: this.id, name: this.name }
+                    }
+                ];
+            }
+
+            return variants.map((v) => ({
+                url: v.url,
+                type: 'hls',
+                quality: this.normalizeQuality(`${v.resolution}p`),
+                audioTracks: tracks,
+                provider: { id: this.id, name: this.name }
+            }));
+        } catch {
+            return [
+                {
+                    url,
+                    type: 'hls',
+                    quality: 'auto',
+                    audioTracks: [fallbackAudio],
+                    provider: { id: this.id, name: this.name }
+                }
+            ];
+        }
+    }
+
+    private parseVariants(
+        content: string,
+        baseUrl: string
+    ): Array<{ resolution: number; url: string }> {
+        const variants: Array<{ resolution: number; url: string }> = [];
+        const regex =
+            /#EXT-X-STREAM-INF:.*RESOLUTION=\d+x(\d+).*\n(?:#[^\n]*\n)*([^#\n][^\n]*)/g;
+
+        let match: RegExpExecArray | null;
+        while ((match = regex.exec(content)) !== null) {
+            const resolution = parseInt(match[1], 10);
+            let variantUrl = match[2].trim();
+
+            if (!variantUrl.startsWith('http') && !variantUrl.startsWith('/')) {
+                // relative to baseUrl
+                const parts = baseUrl.split('?')[0].split('/');
+                parts.pop();
+                variantUrl = parts.join('/') + '/' + variantUrl;
+            } else if (variantUrl.startsWith('/')) {
+                // relative to origin of baseUrl
+                try {
+                    const urlObj = new URL(baseUrl);
+                    variantUrl = urlObj.origin + variantUrl;
+                } catch {
+                    // fallback if baseUrl is not a full URL
+                }
+            }
+
+            variants.push({ resolution, url: variantUrl });
+        }
+
+        return variants;
+    }
+
+    private parseAudioTracks(content: string): AudioTrack[] {
+        const tracks: AudioTrack[] = [];
+        const lines = content.split('\n');
+
+        for (const line of lines) {
+            if (!line.includes('TYPE=AUDIO')) continue;
+
+            const language =
+                line.match(/LANGUAGE="([^"]+)"/)?.[1]?.toLowerCase() ??
+                'unknown';
+            const label = line.match(/NAME="([^"]+)"/)?.[1] ?? language;
+
+            tracks.push({ language, label });
+        }
+
+        return tracks;
+    }
+
+    private inferSourceType(url: string): SourceType {
+        const clean = url.toLowerCase().split('?')[0];
+
+        if (clean.endsWith('.m3u8')) return 'hls';
+        if (clean.endsWith('.mpd')) return 'dash';
+        if (clean.endsWith('.mp4')) return 'mp4';
+        if (clean.endsWith('.mkv')) return 'mkv';
+        if (clean.endsWith('.webm')) return 'webm';
+
+        return 'hls';
+    }
+
+    private normalizeQuality(value?: string): string {
+        if (!value) return 'unknown';
+
+        const v = value.toLowerCase();
+
+        if (v.includes('2160') || v.includes('4k')) return '4k';
+        if (v.includes('1080')) return '1080p';
+        if (v.includes('720')) return '720p';
+        if (v.includes('480') || v.includes('482')) return '480p';
+        if (v.includes('360') || v.includes('358')) return '360p';
+
+        return value;
+    }
+
+    private emptyResult(message: string): ProviderResult {
+        return {
+            sources: [],
+            subtitles: [],
+            diagnostics: [
+                {
+                    code: 'PROVIDER_ERROR',
+                    message: `${this.name}: ${message}`,
+                    field: '',
+                    severity: 'error'
+                }
+            ]
+        };
+    }
+}
