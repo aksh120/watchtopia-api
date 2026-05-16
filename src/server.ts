@@ -4,11 +4,14 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { knownThirdPartyProxies } from './thirdPartyProxies.js';
 import { streamPatterns } from './streamPatterns.js';
+import { VideasyProvider } from './providers/videasy/videasy.js';
+import { VidNestProvider } from './providers/vidnest/vidnest.js';
+import { StreamMafiaProvider } from './providers/streammafia/streammafia.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function main() {
+export async function bootstrap() {
     const server = new OMSSServer({
         name: 'CinePro',
         version: '1.0.0',
@@ -75,10 +78,25 @@ async function main() {
         }
     });
 
-    // Register providers
     const registry = server.getRegistry();
-    await registry.discoverProviders(path.join(__dirname, './providers/'));
 
+    // Statically register providers for serverless (Vercel) compatibility
+    registry.register(new VideasyProvider());
+    registry.register(new VidNestProvider());
+    registry.register(new StreamMafiaProvider());
+
+    // Optional: discover other providers if filesystem is accessible
+    try {
+        await registry.discoverProviders(path.join(__dirname, './providers/'));
+    } catch {
+        // Discovery might fail in some serverless environments
+    }
+
+    return server;
+}
+
+async function main() {
+    const server = await bootstrap();
     await server.start();
 
     const publicUrl =
