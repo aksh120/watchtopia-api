@@ -69,7 +69,7 @@ export class VideasyProvider extends BaseProvider {
     readonly BASE_URL = 'https://api.videasy.net';
     readonly HEADERS = {
         'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
         Accept: 'application/json, */*; q=0.01',
         Referer: 'https://player.videasy.net/',
         Origin: 'https://player.videasy.net'
@@ -194,7 +194,8 @@ export class VideasyProvider extends BaseProvider {
         });
 
         if (!response.ok) {
-            return this.emptyResult('invalid response', media);
+            console.error(`Videasy: ${server.name} fetch failed with status ${response.status}`);
+            return this.emptyResult(`invalid response: ${response.status}`, media);
         }
 
         // api returns plain text hex blob, not json
@@ -260,7 +261,7 @@ export class VideasyProvider extends BaseProvider {
 
         return {
             sources: sources.filter((s) =>
-                s.audioTracks.some(
+                s.audioTracks.every(
                     (t: AudioTrack) =>
                         this.isAllowedLanguage(t.language) ||
                         this.isAllowedLanguage(t.label)
