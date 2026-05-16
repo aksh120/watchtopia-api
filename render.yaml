@@ -3,7 +3,7 @@ services:
     name: cinepro-core
     env: node
     plan: free
-    buildCommand: npm install --include=dev && npm run build
+    buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /v1/health
     envVars:
