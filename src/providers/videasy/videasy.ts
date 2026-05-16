@@ -190,7 +190,7 @@ export class VideasyProvider extends BaseProvider {
         const url = `${server.url}?${new URLSearchParams(params as Record<string, string>)}`;
         const response = await fetch(url, {
             headers: this.HEADERS,
-            signal: AbortSignal.timeout(6000)
+            signal: AbortSignal.timeout(10000)
         });
 
         if (!response.ok) {
@@ -396,7 +396,7 @@ export class VideasyProvider extends BaseProvider {
         try {
             const res = await fetch(url, {
                 headers: this.HEADERS,
-                signal: AbortSignal.timeout(6000)
+                signal: AbortSignal.timeout(10000)
             });
             const content = await res.text();
             const variants = this.parseVariants(content, url);

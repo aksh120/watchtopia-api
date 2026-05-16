@@ -311,7 +311,7 @@ export class StreamMafiaProvider extends BaseProvider {
                     ...this.HEADERS,
                     Referer: this.BASE_URL + '/'
                 },
-                signal: AbortSignal.timeout(6000)
+                signal: AbortSignal.timeout(10000)
             });
 
             const content: string = await res.text();
