@@ -45,7 +45,8 @@ export class StreamMafiaProvider extends BaseProvider {
         try {
             const res = await fetch(this.BASE_URL, {
                 method: 'HEAD',
-                headers: this.HEADERS
+                headers: this.HEADERS,
+                signal: AbortSignal.timeout(6000)
             });
             return res.status === 200;
         } catch {
@@ -104,7 +105,8 @@ export class StreamMafiaProvider extends BaseProvider {
         try {
             const res = await fetch(`${this.BASE_URL}/api/token`, {
                 headers: { ...this.HEADERS },
-                referrer: this.BASE_URL + '/'
+                referrer: this.BASE_URL + '/',
+                signal: AbortSignal.timeout(6000)
             });
             if (res.status !== 200) return '';
             const data = (await res.json()) as { token?: string };
@@ -119,7 +121,8 @@ export class StreamMafiaProvider extends BaseProvider {
             const res = await fetch(this.BASE_URL + '/api/session', {
                 method: 'POST',
                 headers: this.HEADERS,
-                body: null
+                body: null,
+                signal: AbortSignal.timeout(6000)
             });
             return res.headers.get('Set-Cookie') || '';
         } catch {
