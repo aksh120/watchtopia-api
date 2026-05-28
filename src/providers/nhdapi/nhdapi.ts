@@ -145,7 +145,8 @@ export class NhdApiProvider extends BaseProvider {
                             const hlsSources = await this.resolveHLS(
                                 proxyUrl,
                                 fallbackAudio,
-                                parsedQuality
+                                parsedQuality,
+                                url
                             );
                             for (const s of hlsSources) {
                                 if ((s.quality === 'auto' || s.quality === 'unknown') && parsedQuality !== 'unknown' && parsedQuality !== 'auto') {
@@ -162,8 +163,9 @@ export class NhdApiProvider extends BaseProvider {
                                 provider: {
                                     id: this.id,
                                     name: this.name
-                                }
-                            });
+                                },
+                                rawUrl: url
+                            } as any as Source);
                         }
                     }
                 }
@@ -389,7 +391,8 @@ export class NhdApiProvider extends BaseProvider {
                     Origin: this.BASE_URL
                 }),
                 fallbackAudio,
-                'auto'
+                'auto',
+                api.stream.hls_streaming
             );
             const filteredHls = hlsSources.filter((s) =>
                 s.audioTracks.every(
@@ -414,8 +417,9 @@ export class NhdApiProvider extends BaseProvider {
                 provider: {
                     id: this.id,
                     name: this.name
-                }
-            });
+                },
+                rawUrl: download.url
+            } as any as Source);
         }
 
         const allowedQualities = ['360p', '480p', '720p', '1080p', '4k'];
@@ -443,7 +447,8 @@ export class NhdApiProvider extends BaseProvider {
     private async resolveHLS(
         url: string,
         fallbackAudio: AudioTrack,
-        originalQuality: string
+        originalQuality: string,
+        rawUrl?: string
     ): Promise<Source[]> {
         try {
             const res = await fetch(url, {
@@ -456,6 +461,7 @@ export class NhdApiProvider extends BaseProvider {
 
             const content: string = await res.text();
             const variants = this.parseVariants(content, url);
+            const rawVariants = rawUrl ? this.parseVariants(content, rawUrl) : [];
             const audioTracks = this.parseAudioTracks(content);
             const tracks =
                 audioTracks.length > 0 ? audioTracks : [fallbackAudio];
@@ -467,18 +473,20 @@ export class NhdApiProvider extends BaseProvider {
                         type: 'hls',
                         quality: 'auto',
                         audioTracks: tracks,
-                        provider: { id: this.id, name: this.name }
-                    }
+                        provider: { id: this.id, name: this.name },
+                        rawUrl: rawUrl || url
+                    } as any as Source
                 ];
             }
 
-            return variants.map((v) => ({
+            return variants.map((v, idx) => ({
                 url: v.url,
                 type: 'hls',
                 quality: this.normalizeQuality(`${v.resolution}p`),
                 audioTracks: tracks,
-                provider: { id: this.id, name: this.name }
-            }));
+                provider: { id: this.id, name: this.name },
+                rawUrl: rawVariants[idx]?.url || v.url
+            } as any as Source));
         } catch {
             return [
                 {
@@ -486,8 +494,9 @@ export class NhdApiProvider extends BaseProvider {
                     type: 'hls',
                     quality: 'auto',
                     audioTracks: [fallbackAudio],
-                    provider: { id: this.id, name: this.name }
-                }
+                    provider: { id: this.id, name: this.name },
+                    rawUrl: rawUrl || url
+                } as any as Source
             ];
         }
     }
