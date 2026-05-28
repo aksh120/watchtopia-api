@@ -94,6 +94,26 @@ export default async function bootstrap() {
         // Discovery might fail in some serverless environments
     }
 
+    const app = server.getInstance();
+    app.addHook('preSerialization', async (request, reply, payload: any) => {
+        if (payload && Array.isArray(payload.sources)) {
+            return {
+                ...payload,
+                sources: payload.sources.map((source: any) => {
+                    if (source && source.url !== undefined) {
+                        const { url, ...rest } = source;
+                        return {
+                            rawUrl: url,
+                            ...rest
+                        };
+                    }
+                    return source;
+                })
+            };
+        }
+        return payload;
+    });
+
     return server;
 }
 
