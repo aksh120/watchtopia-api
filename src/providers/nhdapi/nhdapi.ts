@@ -9,15 +9,15 @@ import type {
     SourceType
 } from '@omss/framework';
 import { BaseProvider } from '@omss/framework';
-import { ApiResponse, EncryptedPayload, Switch } from './streammafia.types.js';
+import { ApiResponse, EncryptedPayload, Switch, TvFallbackResponse } from './nhdapi.types.js';
 import { decryptStreamMafia } from './decrypt.js';
 import { generateRandomUserAgent } from '../../utils/ua.js';
 
-export class StreamMafiaProvider extends BaseProvider {
-    readonly id = 'streammafia';
-    readonly name = 'MafiaEmbed';
+export class NhdApiProvider extends BaseProvider {
+    readonly id = 'nhdapi';
+    readonly name = 'NHD API';
     readonly enabled = true;
-    readonly BASE_URL = 'https://sf.streammafia.to';
+    readonly BASE_URL = 'https://player.nhdapi.com';
     readonly HEADERS = {
         'User-Agent': '',
         Accept: 'application/json, text/javascript, */*; q=0.01',
@@ -34,29 +34,6 @@ export class StreamMafiaProvider extends BaseProvider {
     };
 
     async getMovieSources(media: ProviderMediaObject): Promise<ProviderResult> {
-        return this.getSources(media);
-    }
-
-    async getTVSources(media: ProviderMediaObject): Promise<ProviderResult> {
-        return this.getSources(media);
-    }
-
-    async healthCheck(): Promise<boolean> {
-        try {
-            const res = await fetch(this.BASE_URL, {
-                method: 'HEAD',
-                headers: this.HEADERS,
-                signal: AbortSignal.timeout(6000)
-            });
-            return res.status === 200;
-        } catch {
-            return false;
-        }
-    }
-
-    private async getSources(
-        media: ProviderMediaObject
-    ): Promise<ProviderResult> {
         try {
             this.HEADERS['User-Agent'] = generateRandomUserAgent();
             this.HEADERS['x-content-id'] = media.tmdbId.toString();
@@ -85,19 +62,161 @@ export class StreamMafiaProvider extends BaseProvider {
 
             this.HEADERS['x-api-token'] = token;
 
-            const url = this.buildPageUrl(media);
+            const url = `${this.BASE_URL}/api/movie/?id=${media.tmdbId}`;
             const encrypted = await this.fetchPage(url);
 
             if (!encrypted) {
                 return this.emptyResult('Invalid API response');
             }
 
-            const api = decryptStreamMafia(encrypted);
+            const api = decryptStreamMafia(encrypted) as ApiResponse;
             return await this.mapApiResponse(api);
         } catch (err) {
             return this.emptyResult(
                 err instanceof Error ? err.message : 'Unknown error'
             );
+        }
+    }
+
+    async getTVSources(media: ProviderMediaObject): Promise<ProviderResult> {
+        try {
+            this.HEADERS['User-Agent'] = generateRandomUserAgent();
+            this.HEADERS['x-content-id'] = media.tmdbId.toString();
+
+            const cookie: string = await this.getSessionCookie();
+            if (!cookie) {
+                return this.emptyResult('Failed to retrieve session cookie');
+            }
+
+            this.HEADERS.Cookie =
+                cookie.split(';')[0] ||
+                'vid_session=' +
+                    Buffer.from(
+                        JSON.stringify({
+                            id: media.tmdbId,
+                            iat: Math.floor(Date.now() / 1000)
+                        })
+                    ).toString('base64');
+
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            const token: string = await this.getToken();
+            if (!token) {
+                return this.emptyResult('Failed to retrieve access token');
+            }
+
+            this.HEADERS['x-api-token'] = token;
+
+            const packages = await this.getActivePackages();
+
+            const results = await Promise.allSettled(
+                packages.map(async (pkg) => {
+                    const url = `${this.BASE_URL}/api/v3/fallback?type=tv&id=${media.tmdbId}&s=${media.s}&e=${media.e}&pkg=${pkg}`;
+                    const encrypted = await this.fetchPage(url);
+                    if (!encrypted) return null;
+                    const decrypted = decryptStreamMafia(encrypted) as TvFallbackResponse;
+                    return decrypted;
+                })
+            );
+
+            const sources: Source[] = [];
+            const subtitles: Subtitle[] = [];
+            const diagnostics: Diagnostic[] = [];
+
+            const fallbackAudio: AudioTrack = {
+                language: 'unknown',
+                label: 'Unknown'
+            };
+
+            for (const r of results) {
+                if (r.status === 'fulfilled' && r.value) {
+                    const decrypted = r.value;
+                    const url = decrypted.url;
+                    if (url) {
+                        const parsedQuality = this.normalizeQuality(decrypted.quality || 'auto');
+                        const proxyUrl = this.createProxyUrl(url, {
+                            ...this.HEADERS,
+                            Referer: this.BASE_URL + '/',
+                            Origin: this.BASE_URL
+                        });
+                        const type = this.inferSourceType(url);
+
+                        if (type === 'hls') {
+                            const hlsSources = await this.resolveHLS(
+                                proxyUrl,
+                                fallbackAudio,
+                                parsedQuality
+                            );
+                            for (const s of hlsSources) {
+                                if ((s.quality === 'auto' || s.quality === 'unknown') && parsedQuality !== 'unknown' && parsedQuality !== 'auto') {
+                                    s.quality = parsedQuality;
+                                }
+                            }
+                            sources.push(...hlsSources);
+                        } else {
+                            sources.push({
+                                url: proxyUrl,
+                                type,
+                                quality: parsedQuality,
+                                audioTracks: [fallbackAudio],
+                                provider: {
+                                    id: this.id,
+                                    name: this.name
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+
+            if (sources.length === 0) {
+                diagnostics.push({
+                    code: 'PROVIDER_ERROR',
+                    message: `${this.name}: No TV sources found`,
+                    field: '',
+                    severity: 'error'
+                });
+            }
+
+            // Deduplicate and filter languages
+            const seen = new Set<string>();
+            const deduped: Source[] = [];
+
+            for (const s of sources) {
+                if (seen.has(s.url)) continue;
+
+                const isAllowed =
+                    s.audioTracks.length === 0 ||
+                    s.audioTracks.some(
+                        (t: AudioTrack) =>
+                            this.isAllowedLanguage(t.language) ||
+                            this.isAllowedLanguage(t.label)
+                    );
+
+                if (!isAllowed) continue;
+
+                seen.add(s.url);
+                deduped.push(s);
+            }
+
+            return { sources: this.sortSourcesByQuality(deduped), subtitles, diagnostics };
+        } catch (err) {
+            return this.emptyResult(
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+        }
+    }
+
+    async healthCheck(): Promise<boolean> {
+        try {
+            const res = await fetch(this.BASE_URL, {
+                method: 'HEAD',
+                headers: this.HEADERS,
+                signal: AbortSignal.timeout(6000)
+            });
+            return res.status === 200;
+        } catch {
+            return false;
         }
     }
 
@@ -130,12 +249,32 @@ export class StreamMafiaProvider extends BaseProvider {
         }
     }
 
-    private buildPageUrl(media: ProviderMediaObject): string {
-        if (media.type === 'movie') {
-            return `${this.BASE_URL}/api/movie/?id=${media.tmdbId}`;
+    private async getActivePackages(): Promise<string[]> {
+        const fallbackPackages = ['Hydra', 'Titan', 'Nexus', 'Inferno', 'BKC'];
+        try {
+            const res = await fetch('https://embedmafia.in/', {
+                headers: {
+                    'User-Agent': generateRandomUserAgent(),
+                    Accept: 'application/json'
+                },
+                signal: AbortSignal.timeout(6000)
+            });
+            if (res.status !== 200) {
+                return fallbackPackages;
+            }
+            const data = (await res.json()) as { servers?: Array<{ name: string; active: boolean }> };
+            if (data && Array.isArray(data.servers)) {
+                const active = data.servers
+                    .filter((s) => s.active && s.name)
+                    .map((s) => s.name);
+                if (active.length > 0) {
+                    return active;
+                }
+            }
+            return fallbackPackages;
+        } catch {
+            return fallbackPackages;
         }
-
-        return `${this.BASE_URL}/api/?tv=${media.tmdbId}&season=${media.s}&episode=${media.e}`;
     }
 
     private async fetchPage(url: string): Promise<EncryptedPayload | null> {
@@ -206,7 +345,7 @@ export class StreamMafiaProvider extends BaseProvider {
             deduped.push(s);
         }
 
-        return { sources: deduped, subtitles, diagnostics };
+        return { sources: this.sortSourcesByQuality(deduped), subtitles, diagnostics };
     }
 
     private isAllowedLanguage(lang?: string): boolean {
@@ -218,14 +357,12 @@ export class StreamMafiaProvider extends BaseProvider {
 
     private async resolveSwitch(sw: Switch): Promise<Source[]> {
         try {
-            const headers = { ...this.HEADERS };
-
             const url = `${this.BASE_URL}/api/source/${sw.file_code}`;
             const encrypted = await this.fetchPage(url);
 
             if (!encrypted) return [];
 
-            const api = decryptStreamMafia(encrypted);
+            const api = decryptStreamMafia(encrypted) as ApiResponse;
 
             const fallbackAudio: AudioTrack = {
                 language: sw.lang_code?.toLowerCase() || 'unknown',
@@ -431,6 +568,24 @@ export class StreamMafiaProvider extends BaseProvider {
         if (v.includes('360') || v.includes('358')) return '360p';
 
         return value;
+    }
+
+    private sortSourcesByQuality(sources: Source[]): Source[] {
+        const qualityPriority: Record<string, number> = {
+            '4k': 5,
+            '1080p': 4,
+            '720p': 3,
+            '480p': 2,
+            '360p': 1,
+            'auto': 0,
+            'unknown': -1
+        };
+
+        return sources.sort((a, b) => {
+            const prioA = qualityPriority[a.quality] ?? -2;
+            const prioB = qualityPriority[b.quality] ?? -2;
+            return prioB - prioA;
+        });
     }
 
     private emptyResult(message: string): ProviderResult {

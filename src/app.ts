@@ -6,7 +6,7 @@ import { knownThirdPartyProxies } from './thirdPartyProxies.js';
 import { streamPatterns } from './streamPatterns.js';
 import { VideasyProvider } from './providers/videasy/videasy.js';
 import { VidNestProvider } from './providers/vidnest/vidnest.js';
-import { StreamMafiaProvider } from './providers/streammafia/streammafia.js';
+import { NhdApiProvider } from './providers/nhdapi/nhdapi.js';
 
 const __filename = import.meta.url ? fileURLToPath(import.meta.url) : '';
 const __dirname = __filename ? path.dirname(__filename) : '';
@@ -83,7 +83,7 @@ export default async function bootstrap() {
     // Statically register providers for serverless (Vercel) compatibility
     registry.register(new VideasyProvider());
     registry.register(new VidNestProvider());
-    registry.register(new StreamMafiaProvider());
+    registry.register(new NhdApiProvider());
 
     // Optional: discover other providers if filesystem is accessible
     try {

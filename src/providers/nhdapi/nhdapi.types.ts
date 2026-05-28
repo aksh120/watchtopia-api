@@ -69,3 +69,8 @@ export interface PreviewVideo {
 export interface Source {
     goal_api: string;
 }
+
+export interface TvFallbackResponse {
+    url: string | null;
+    quality: string | null;
+}

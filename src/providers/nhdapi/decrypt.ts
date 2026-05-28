@@ -1,5 +1,5 @@
 import { createHash, createDecipheriv } from 'crypto';
-import type { ApiResponse } from './streammafia.types.js';
+import type { ApiResponse } from './nhdapi.types.js';
 
 function base64ToBuffer(b64: string): Buffer {
     return Buffer.from(b64, 'base64');
@@ -13,7 +13,7 @@ export function decryptStreamMafia(payload: {
     iv: string;
     tag: string;
     data: string;
-}): ApiResponse {
+}): any {
     try {
         const iv = base64ToBuffer(payload.iv);
         const tag = base64ToBuffer(payload.tag);
