@@ -5,8 +5,8 @@ import path from 'node:path';
 import { knownThirdPartyProxies } from './thirdPartyProxies.js';
 import { streamPatterns } from './streamPatterns.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = import.meta.url ? fileURLToPath(import.meta.url) : '';
+const __dirname = __filename ? path.dirname(__filename) : '';
 
 async function main() {
     const server = new OMSSServer({
@@ -77,7 +77,9 @@ async function main() {
 
     // Register providers
     const registry = server.getRegistry();
-    await registry.discoverProviders(path.join(__dirname, './providers/'));
+    if (__dirname) {
+        await registry.discoverProviders(path.join(__dirname, './providers/'));
+    }
 
     await server.start();
 

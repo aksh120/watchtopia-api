@@ -14,11 +14,11 @@
         "declaration": true,
         "sourceMap": true,
         "noEmit": false,
-        "types": ["node"]
+        "types": ["node", "@cloudflare/workers-types"]
     },
     "ts-node": {
         "esm": true
     },
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "worker-configuration.d.ts"],
     "exclude": ["node_modules", "dist"]
 }

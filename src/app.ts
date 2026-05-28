@@ -8,8 +8,8 @@ import { VideasyProvider } from './providers/videasy/videasy.js';
 import { VidNestProvider } from './providers/vidnest/vidnest.js';
 import { StreamMafiaProvider } from './providers/streammafia/streammafia.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = import.meta.url ? fileURLToPath(import.meta.url) : '';
+const __dirname = __filename ? path.dirname(__filename) : '';
 
 export default async function bootstrap() {
     const server = new OMSSServer({
@@ -87,7 +87,9 @@ export default async function bootstrap() {
 
     // Optional: discover other providers if filesystem is accessible
     try {
-        await registry.discoverProviders(path.join(__dirname, './providers/'));
+        if (__dirname) {
+            await registry.discoverProviders(path.join(__dirname, './providers/'));
+        }
     } catch {
         // Discovery might fail in some serverless environments
     }
@@ -130,7 +132,7 @@ ${borderBottom}
 `);
 }
 
-if (!process.env.VERCEL) {
+if (!process.env.VERCEL && !process.env.IS_CLOUDFLARE_WORKER) {
     main().catch((err) => {
         console.error('Fatal Server Error:', err);
         process.exit(1);

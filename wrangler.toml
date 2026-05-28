@@ -1,0 +1,10 @@
+name = "watchtopia-api"
+main = "src/worker.ts"
+compatibility_date = "2025-08-15"
+compatibility_flags = [ "nodejs_compat", "enable_nodejs_http_server_modules" ]
+
+[vars]
+NODE_ENV = "production"
+CACHE_TYPE = "memory"
+IS_CLOUDFLARE_WORKER = "true"
+# TMDB_API_KEY should be set in the Cloudflare Workers dashboard as a secret
